@@ -20,6 +20,7 @@
 #include "key_io.h"
 #include "main.h"
 #include "metrics.h"
+#include "masternode-sync.h"
 #include "net.h"
 #include "pow.h"
 #include "primitives/transaction.h"
@@ -31,6 +32,9 @@
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
 #endif
+
+#include "masternode-payments.h"
+#include "spork.h"
 
 #include "sodium.h"
 
@@ -348,7 +352,6 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
 
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
-        LogPrintf("CreateNewBlock(): total size %u\n", nBlockSize);
 
         // Create coinbase tx
         CMutableTransaction txNew = CreateNewContextualCMutableTransaction(chainparams.GetConsensus(), nHeight);
@@ -356,22 +359,13 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
         txNew.vin[0].prevout.SetNull();
         txNew.vout.resize(1);
         txNew.vout[0].scriptPubKey = scriptPubKeyIn;
-        txNew.vout[0].nValue = GetBlockSubsidy(nHeight, chainparams.GetConsensus());
-        // Set to 0 so expiry height does not apply to coinbase txs
-        txNew.nExpiryHeight = 0;
 
-        if ((nHeight > 0) && (nHeight <= chainparams.GetConsensus().GetLastFoundersRewardBlockHeight())) {
-            // Founders reward is 20% of the block subsidy
-            auto vFoundersReward = txNew.vout[0].nValue / 5;
-            // Take some reward away from us
-            txNew.vout[0].nValue -= vFoundersReward;
+        // Masternode and general budget payments
+        FillBlockPayee(txNew, nFees);
 
-            // And give it to the founders
-            txNew.vout.push_back(CTxOut(vFoundersReward, chainparams.GetFoundersRewardScriptAtHeight(nHeight)));
-        }
+        // Make payee
+        pblock->payee = txNew.vout[txNew.vout.size() - 1].scriptPubKey;
 
-        // Add fees
-        txNew.vout[0].nValue += nFees;
         txNew.vin[0].scriptSig = CScript() << nHeight << OP_0;
 
         pblock->vtx[0] = txNew;

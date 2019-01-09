@@ -1046,6 +1046,36 @@ static const CRPCCommand commands[] =
     /* Not shown in help */
     { "hidden",             "invalidateblock",        &invalidateblock,        true  },
     { "hidden",             "reconsiderblock",        &reconsiderblock,        true  },
+    /* MN features */
+    {"commercium",             "masternode",               &masternode, true},
+    {"commercium",             "listmasternodes",          &listmasternodes, true},
+    {"commercium",             "getmasternodecount",       &getmasternodecount, true},
+    {"commercium",             "masternodeconnect",        &masternodeconnect, true},
+    {"commercium",             "masternodecurrent",        &masternodecurrent, true},
+    {"commercium",             "masternodedebug",          &masternodedebug, true},
+    {"commercium",             "startmasternode",          &startmasternode, true},
+    {"commercium",             "createmasternodekey",      &createmasternodekey, true},
+    {"commercium",             "getmasternodeoutputs",     &getmasternodeoutputs, true},
+    {"commercium",             "listmasternodeconf",       &listmasternodeconf, true},
+    {"commercium",             "getmasternodestatus",      &getmasternodestatus, true},
+    {"commercium",             "getmasternodewinners",     &getmasternodewinners, true},
+    {"commercium",             "getmasternodescores",      &getmasternodescores, true},
+    {"commercium",             "mnbudget",                 &mnbudget, true},
+    {"commercium",             "preparebudget",            &preparebudget, true},
+    {"commercium",             "submitbudget",             &submitbudget, true},
+    {"commercium",             "mnbudgetvote",             &mnbudgetvote, true},
+    {"commercium",             "getbudgetvotes",           &getbudgetvotes, true},
+    {"commercium",             "getnextsuperblock",        &getnextsuperblock, true},
+    {"commercium",             "getbudgetprojection",      &getbudgetprojection, true},
+    {"commercium",             "getbudgetinfo",            &getbudgetinfo, true},
+    {"commercium",             "mnbudgetrawvote",          &mnbudgetrawvote, true},
+    {"commercium",             "mnfinalbudget",            &mnfinalbudget, true},
+    {"commercium",             "checkbudgets",             &checkbudgets, true},
+    {"commercium",             "mnsync",                   &mnsync, true},
+    {"commercium",             "spork",                    &spork, true},
+    {"commercium",             "getpoolinfo",              &getpoolinfo, true},
+    {"commercium",             "startalias",               &startalias, true},
+
 };
 
 void RegisterBlockchainRPCCommands(CRPCTable &tableRPC)
