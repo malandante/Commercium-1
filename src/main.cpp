@@ -2110,8 +2110,15 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
 {
-    int64_t ret = blockValue * 60 / 100;
-
+    int64_t ret = blockValue * 35 / 100; //default: 35%
+    int nMNPSBlock = Params().GetConsensus().nMasternodePaymentsStartBlock;
+    int nMNPIPeriod = Params().GetConsensus().nMasternodePaymentsIncreasePeriod;
+    int nMNPaymentChange = Params().GetConsensus().vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight;
+    if(nHeight > nMNPSBlock)             ret = blockValue * 35 / 100; // > 193200 - 35.0%
+    if(nHeight > nMNPSBlock+(nMNPIPeriod* 1)) ret += blockValue / 20; // > 236400 - 40.0%
+    if(nHeight > nMNPSBlock+(nMNPIPeriod* 2)) ret += blockValue / 20; // > 279600 - 45.0%
+    if(nHeight > nMNPSBlock+(nMNPIPeriod* 3)) ret += blockValue / 20; // > 322800 - 50.0%
+    if(nHeight > nMNPaymentChange) ret -= blockValue / 20; // 45%
     return ret;
 }
 
