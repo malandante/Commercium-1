@@ -129,8 +129,6 @@ public:
         nEquihashK = K;
         nMasternodeCountDrift = 0;
 
-    nMasternodeCountDrift = 0;
-
         genesis = CreateGenesisBlock(
             1546139923,
             uint256S("0x0000000000000000000000000000000000000000000000000000000000000767"),
