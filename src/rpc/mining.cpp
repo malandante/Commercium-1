@@ -25,6 +25,7 @@
 #include "wallet/wallet.h"
 #endif
 
+#include "key_io.h"
 #include <stdint.h>
 
 #include <boost/assign/list_of.hpp>
@@ -739,11 +740,12 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     result.push_back(Pair("votes", aVotes));
 
 
+
     if(pblock->payee != CScript()){
         CTxDestination address1;
         ExtractDestination(pblock->payee, address1);
-        CBitcoinAddress address2(address1);
-        result.push_back(Pair("payee", address2.ToString().c_str()));
+
+        result.push_back(Pair("payee", EncodeDestination(address1)));
         CAmount val = pblock->vtx[0].vout[pblock->vtx[0].vout.size() - 1].nValue;
         result.push_back(Pair("payee_amount", (int64_t)val));
     } else {
@@ -753,6 +755,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
 
     result.push_back(Pair("masternode_payments", pblock->nTime > Params().StartMasternodePayments() ? "true" : "false"));
     result.push_back(Pair("enforce_masternode_payments", true));
+
     return result;
 }
 

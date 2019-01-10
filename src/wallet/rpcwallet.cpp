@@ -4667,9 +4667,10 @@ static const CRPCCommand commands[] =
     { "wallet",             "z_exportwallet",           &z_exportwallet,           true  },
     { "wallet",             "z_importwallet",           &z_importwallet,           true  },
     // TODO: rearrange into another category
+    {"commercium",             "obfuscation",              &obfuscation, false}, /* not threadSafe because of SendMoney */
+
     { "disclosure",         "z_getpaymentdisclosure",   &z_getpaymentdisclosure,   true  },
     { "disclosure",         "z_validatepaymentdisclosure", &z_validatepaymentdisclosure, true }
-    {"commercium",             "obfuscation",              &obfuscation, false}, /* not threadSafe because of SendMoney */
 
 };
 

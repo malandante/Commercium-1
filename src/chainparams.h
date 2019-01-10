@@ -93,6 +93,7 @@ public:
     const std::string& Bech32HRP(Bech32Type type) const { return bech32HRPs[type]; }
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     const CCheckpointData& Checkpoints() const { return checkpointData; }
+    int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     /** Return the founder's reward address and script for a given block height */
     std::string SporkKey() const { return strSporkKey; }
     std::string ObfuscationPoolDummyAddress() const { return strObfuscationPoolDummyAddress; }
@@ -103,6 +104,8 @@ public:
     std::string GetFoundersRewardAddressAtHeight(int height) const;
     CScript GetFoundersRewardScriptAtHeight(int height) const;
     std::string GetFoundersRewardAddressAtIndex(int i) const;
+    /** The masternode count that we will allow the see-saw reward payments to be off by */
+    int MasternodeCountDrift() const { return nMasternodeCountDrift; }
     /** Enforce coinbase consensus rule in regtest mode */
     void SetRegTestCoinbaseMustBeProtected() { consensus.fCoinbaseMustBeProtected = true; }
 protected:
@@ -116,8 +119,6 @@ protected:
     uint64_t nPruneAfterHeight = 0;
     unsigned int nEquihashN = 0;
     unsigned int nEquihashK = 0;
-    /** The masternode count that we will allow the see-saw reward payments to be off by */
-    int MasternodeCountDrift() const { return nMasternodeCountDrift; }
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
     std::string bech32HRPs[MAX_BECH32_TYPES];
@@ -139,7 +140,6 @@ protected:
     int64_t nStartMasternodePayments;
     int64_t nBudget_Fee_Confirmations;
     CCheckpointData checkpointData;
-    int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     std::vector<std::string> vFoundersRewardAddress;
 };
 

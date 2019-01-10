@@ -1676,35 +1676,70 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState &state, const CTransa
     return true;
 }
 
-bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransaction& tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee, bool isDSTX)
+bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransaction& tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectAbsurdFee, bool isDSTX)
 {
     AssertLockHeld(cs_main);
     if (pfMissingInputs)
         *pfMissingInputs = false;
 
-    auto verifier = libzcash::ProofVerifier::Disabled();
-    if (!CheckTransaction(tx, state, verifier))
-        return error("AcceptableInputs: : CheckTransaction failed");
+    int nextBlockHeight = chainActive.Height() + 1;
+    auto consensusBranchId = CurrentEpochBranchId(nextBlockHeight, Params().GetConsensus());
 
-    // Coinbase is only valid in a block, not as a loose transaction
+    // Node operator can choose to reject tx by number of transparent inputs
+    static_assert(std::numeric_limits<size_t>::max() >= std::numeric_limits<int64_t>::max(), "size_t too small");
+    size_t limit = (size_t) GetArg("-mempooltxinputlimit", 0);
+    if (NetworkUpgradeActive(nextBlockHeight, Params().GetConsensus(), Consensus::UPGRADE_OVERWINTER)) {
+        limit = 0;
+    }
+    if (limit > 0) {
+        size_t n = tx.vin.size();
+        if (n > limit) {
+            LogPrint("mempool", "Dropping txid %s : too many transparent inputs %zu > limit %zu\n", tx.GetHash().ToString(), n, limit );
+            return false;
+        }
+    }
+
+    auto verifier = libzcash::ProofVerifier::Strict();
+    if (!CheckTransaction(tx, state, verifier))
+        return error("AcceptableInputs: CheckTransaction failed");
+
     if (tx.IsCoinBase())
         return state.DoS(100, error("AcceptableInputs: : coinbase as individual tx"),
                          REJECT_INVALID, "coinbase");
 
+    // DoS level set to 10 to be more forgiving.
+    // Check transaction contextually against the set of consensus rules which apply in the next block to be mined.
+    if (!ContextualCheckTransaction(tx, state, nextBlockHeight, 10)) {
+        return error("AcceptToMemoryPool: ContextualCheckTransaction failed");
+    }
+
+    // DoS mitigation: reject transactions expiring soon
+    // Note that if a valid transaction belonging to the wallet is in the mempool and the node is shutdown,
+    // upon restart, CWalletTx::AcceptToMemoryPool() will be invoked which might result in rejection.
+    if (IsExpiringSoonTx(tx, nextBlockHeight)) {
+        return state.DoS(0, error("AcceptToMemoryPool(): transaction is expiring soon"), REJECT_INVALID, "tx-expiring-soon");
+    }
+
+    // Coinbase is only valid in a block, not as a loose transaction
+    if (tx.IsCoinBase())
+        return state.DoS(100, error("AcceptToMemoryPool: coinbase as individual tx"),
+                         REJECT_INVALID, "coinbase");
+
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     string reason;
-// for any real tx this will be checked on AcceptToMemoryPool anyway
-//    if (Params().RequireStandard() && !IsStandardTx(tx, reason))
-//        return state.DoS(0,
-//                         error("AcceptableInputs : nonstandard transaction: %s", reason),
-//                         REJECT_NONSTANDARD, reason);
+    
+    // Only accept nLockTime-using transactions that can be mined in the next
+    // block; we don't want our mempool filled up with transactions that can't
+    // be mined yet.
+    if (!CheckFinalTx(tx, STANDARD_LOCKTIME_VERIFY_FLAGS))
+        return state.DoS(0, false, REJECT_NONSTANDARD, "non-final");
 
     // is it already in the memory pool?
     uint256 hash = tx.GetHash();
     if (pool.exists(hash))
         return false;
 
-    // ----------- instantX transaction scanning -----------
+    // instantX transaction scanning 
 
     BOOST_FOREACH(const CTxIn& in, tx.vin){
         if(mapLockedInputs.count(in.prevout)){
@@ -1718,18 +1753,29 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
 
     // Check for conflicts with in-memory transactions
     {
-        LOCK(pool.cs); // protect pool.mapNextTx
-        for (unsigned int i = 0; i < tx.vin.size(); i++)
+    LOCK(pool.cs); // protect pool.mapNextTx
+    for (unsigned int i = 0; i < tx.vin.size(); i++)
+    {
+        COutPoint outpoint = tx.vin[i].prevout;
+        if (pool.mapNextTx.count(outpoint))
         {
-            COutPoint outpoint = tx.vin[i].prevout;
-            if (pool.mapNextTx.count(outpoint))
-            {
-                // Disable replacement feature for now
+            // Disable replacement feature for now
+            return false;
+        }
+    }
+    BOOST_FOREACH(const JSDescription &joinsplit, tx.vjoinsplit) {
+        BOOST_FOREACH(const uint256 &nf, joinsplit.nullifiers) {
+            if (pool.nullifierExists(nf, SPROUT)) {
                 return false;
             }
         }
     }
-
+    for (const SpendDescription &spendDescription : tx.vShieldedSpend) {
+        if (pool.nullifierExists(spendDescription.nullifier, SAPLING)) {
+            return false;
+        }
+    }
+    }
 
     {
         CCoinsView dummy;
@@ -1737,49 +1783,47 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
 
         CAmount nValueIn = 0;
         {
-            LOCK(pool.cs);
-            CCoinsViewMemPool viewMemPool(pcoinsTip, pool);
-            view.SetBackend(viewMemPool);
+        LOCK(pool.cs);
+        CCoinsViewMemPool viewMemPool(pcoinsTip, pool);
+        view.SetBackend(viewMemPool);
 
-            // do we already have it?
-            if (view.HaveCoins(hash))
+        // do we already have it?
+        if (view.HaveCoins(hash))
+            return false;
+
+        // do all inputs exist?
+        // Note that this does not check for the presence of actual outputs (see the next check for that),
+        // and only helps with filling in pfMissingInputs (to determine missing vs spent).
+        BOOST_FOREACH(const CTxIn txin, tx.vin) {
+            if (!view.HaveCoins(txin.prevout.hash)) {
+                if (pfMissingInputs)
+                    *pfMissingInputs = true;
                 return false;
-
-            // do all inputs exist?
-            // Note that this does not check for the presence of actual outputs (see the next check for that),
-            // only helps filling in pfMissingInputs (to determine missing vs spent).
-            for (const CTxIn txin : tx.vin) {
-                if (!view.HaveCoins(txin.prevout.hash)) {
-                    if (pfMissingInputs)
-                        *pfMissingInputs = true;
-                    return false;
-                }
-
-                // check for invalid/fraudulent inputs
-                if (!ValidOutPoint(txin.prevout, chainActive.Height())) {
-                    return state.Invalid(error("%s : tried to spend invalid input %s in tx %s", __func__, txin.prevout.ToString(),
-                                                tx.GetHash().GetHex()), REJECT_INVALID, "bad-txns-invalid-inputs");
-                }
             }
+        }
 
-            // are the actual inputs available?
-            if (!view.HaveInputs(tx))
-                return state.Invalid(error("AcceptableInputs : inputs already spent"),
-                                     REJECT_DUPLICATE, "bad-txns-inputs-spent");
+        // are the actual inputs available?
+        if (!view.HaveInputs(tx))
+            return state.Invalid(error("AcceptableInputs: inputs already spent"),
+                                 REJECT_DUPLICATE, "bad-txns-inputs-spent");
 
-            // Bring the best block into scope
-            view.GetBestBlock();
+        // are the joinsplits' and sapling spends' requirements met in tx(valid anchors/nullifiers)?
+        if (!view.HaveShieldedRequirements(tx))
+            return state.Invalid(error("AcceptableInputs: joinsplit requirements not met"),
+                                 REJECT_DUPLICATE, "bad-txns-joinsplit-requirements-not-met");
 
-            nValueIn = view.GetValueIn(tx);
+        // Bring the best block into scope
+        view.GetBestBlock();
 
-            // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
-            view.SetBackend(dummy);
+        nValueIn = view.GetValueIn(tx);
+
+        // we have all inputs cached now, so switch back to dummy, so we don't need to keep lock on mempool
+        view.SetBackend(dummy);
         }
 
         // Check for non-standard pay-to-script-hash in inputs
-// for any real tx this will be checked on AcceptToMemoryPool anyway
-//        if (Params().RequireStandard() && !AreInputsStandard(tx, view))
-//            return error("AcceptableInputs: : nonstandard transaction input");
+        if (Params().RequireStandard() && !AreInputsStandard(tx, view, consensusBranchId))
+            return error("AcceptToMemoryPool: nonstandard transaction input");
 
         // Check that the transaction doesn't have an excessive number of
         // sigops, making it impossible to mine. Since the coinbase transaction
@@ -1787,19 +1831,34 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
         // MAX_BLOCK_SIGOPS; we still consider this an invalid rather than
         // merely non-standard transaction.
         unsigned int nSigOps = GetLegacySigOpCount(tx);
-        unsigned int nMaxSigOps = MAX_STANDARD_TX_SIGOPS;
         nSigOps += GetP2SHSigOpCount(tx, view);
-        if (nSigOps > nMaxSigOps)
+        if (nSigOps > MAX_STANDARD_TX_SIGOPS)
             return state.DoS(0,
-                error("AcceptableInputs : too many sigops %s, %d > %d",
-                    hash.ToString(), nSigOps, nMaxSigOps),
-                REJECT_NONSTANDARD, "bad-txns-too-many-sigops");
+                             error("AcceptToMemoryPool: too many sigops %s, %d > %d",
+                                   hash.ToString(), nSigOps, MAX_STANDARD_TX_SIGOPS),
+                             REJECT_NONSTANDARD, "bad-txns-too-many-sigops");
 
         CAmount nValueOut = tx.GetValueOut();
         CAmount nFees = nValueIn-nValueOut;
         double dPriority = view.GetPriority(tx, chainActive.Height());
 
-        CTxMemPoolEntry entry(tx, nFees, GetTime(), dPriority, chainActive.Height());
+        // Keep track of transactions that spend a coinbase, which we re-scan
+        // during reorgs to ensure COINBASE_MATURITY is still met.
+        bool fSpendsCoinbase = false;
+        BOOST_FOREACH(const CTxIn &txin, tx.vin) {
+            const CCoins *coins = view.AccessCoins(txin.prevout.hash);
+            if (coins->IsCoinBase()) {
+                fSpendsCoinbase = true;
+                break;
+            }
+        }
+
+        // Grab the branch ID we expect this transaction to commit to. We don't
+        // yet know if it does, but if the entry gets added to the mempool, then
+        // it has passed ContextualCheckInputs and therefore this is correct.
+        auto consensusBranchId = CurrentEpochBranchId(chainActive.Height() + 1, Params().GetConsensus());
+
+        CTxMemPoolEntry entry(tx, nFees, GetTime(), dPriority, chainActive.Height(), mempool.HasNoInputsOf(tx), fSpendsCoinbase, consensusBranchId);
         unsigned int nSize = entry.GetTxSize();
 
         // Don't accept it if it can't get into a block
@@ -1813,49 +1872,94 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
                                           hash.ToString(), nFees, txMinFee),
                                  REJECT_INSUFFICIENTFEE, "insufficient fee");
 
-            // Require that free transactions have sufficient priority to be mined in the next block.
-            if (GetBoolArg("-relaypriority", true) && nFees < ::minRelayTxFee.GetFee(nSize) && !AllowFree(view.GetPriority(tx, chainActive.Height() + 1))) {
-                return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "insufficient priority");
-            }
-
-            // Continuously rate-limit free (really, very-low-fee) transactions
-            // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
-            // be annoying or make others' transactions take longer to confirm.
-            if (fLimitFree && nFees < ::minRelayTxFee.GetFee(nSize))
-            {
-                static CCriticalSection csFreeLimiter;
-                static double dFreeCount;
-                static int64_t nLastTime;
-                int64_t nNow = GetTime();
-
-                LOCK(csFreeLimiter);
-
-                // Use an exponentially decaying ~10-minute window:
-                dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
-                nLastTime = nNow;
-                // -limitfreerelay unit is thousand-bytes-per-minute
-                // At default rate it would take over a month to fill 1GB
-                if (dFreeCount >= GetArg("-limitfreerelay", 30) * 10 * 1000)
-                    return state.DoS(0, error("AcceptableInputs : free transaction rejected by rate limiter"),
-                                     REJECT_INSUFFICIENTFEE, "rate limited free transaction");
-                LogPrint("mempool", "Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
-                dFreeCount += nSize;
-            }
+        // Accept a tx if it contains joinsplits and has at least the default fee specified by z_sendmany.
+        if (tx.vjoinsplit.size() > 0 && nFees >= ASYNC_RPC_OPERATION_DEFAULT_MINERS_FEE) {
+            // In future we will we have more accurate and dynamic computation of fees for tx with joinsplits.
+        } else {
+            // Don't accept it if it can't get into a block
+            CAmount txMinFee = GetMinRelayFee(tx, nSize, true);
+            if (fLimitFree && nFees < txMinFee)
+                return state.DoS(0, error("AcceptToMemoryPool: not enough fees %s, %d < %d",
+                                        hash.ToString(), nFees, txMinFee),
+                                REJECT_INSUFFICIENTFEE, "insufficient fee");
         }
 
-        if (fRejectInsaneFee && nFees > ::minRelayTxFee.GetFee(nSize) * 10000)
-            return error("AcceptableInputs: : insane fees %s, %d > %d",
-                         hash.ToString(),
-                         nFees, ::minRelayTxFee.GetFee(nSize) * 10000);
+        // Don't accept it if it can't get into a block
+        // but prioritise dstx and don't check fees for it
+        if (isDSTX) {
+            mempool.PrioritiseTransaction(hash, hash.ToString(), 1000, 0.1 * COIN);
+        } else { // same as !ignoreFees for AcceptToMemoryPool
+            CAmount txMinFee = GetMinRelayFee(tx, nSize, true);
+            if (fLimitFree && nFees < txMinFee)
+                return state.DoS(0, error("AcceptableInputs : not enough fees %s, %d < %d",
+                                          hash.ToString(), nFees, txMinFee),
+                                 REJECT_INSUFFICIENTFEE, "insufficient fee");
+
+        // Require that free transactions have sufficient priority to be mined in the next block.
+        if (GetBoolArg("-relaypriority", false) && nFees < ::minRelayTxFee.GetFee(nSize) && !AllowFree(view.GetPriority(tx, chainActive.Height() + 1))) {
+            return state.DoS(0, false, REJECT_INSUFFICIENTFEE, "insufficient priority");
+        }
+
+        // Continuously rate-limit free (really, very-low-fee) transactions
+        // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
+        // be annoying or make others' transactions take longer to confirm.
+        if (fLimitFree && nFees < ::minRelayTxFee.GetFee(nSize))
+        {
+            static CCriticalSection csFreeLimiter;
+            static double dFreeCount;
+            static int64_t nLastTime;
+            int64_t nNow = GetTime();
+
+            LOCK(csFreeLimiter);
+
+            // Use an exponentially decaying ~10-minute window:
+            dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
+            nLastTime = nNow;
+            // -limitfreerelay unit is thousand-bytes-per-minute
+            // At default rate it would take over a month to fill 1GB
+            if (dFreeCount >= GetArg("-limitfreerelay", 15)*10*1000)
+                return state.DoS(0, error("AcceptToMemoryPool: free transaction rejected by rate limiter"),
+                                 REJECT_INSUFFICIENTFEE, "rate limited free transaction");
+            LogPrint("mempool", "Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
+            dFreeCount += nSize;
+        }
+
+        if (fRejectAbsurdFee && nFees > ::minRelayTxFee.GetFee(nSize) * 10000) {
+            string errmsg = strprintf("absurdly high fees %s, %d > %d",
+                                      hash.ToString(),
+                                      nFees, ::minRelayTxFee.GetFee(nSize) * 10000);
+            LogPrint("mempool", errmsg.c_str());
+            return state.Error("AcceptToMemoryPool: " + errmsg);
+        }
 
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
-        if (!ContextualCheckInputs(tx, state, view, false, STANDARD_SCRIPT_VERIFY_FLAGS, true, Params().GetConsensus()))
-            return error("AcceptableInputs: : ConnectInputs failed %s", hash.ToString());
+        PrecomputedTransactionData txdata(tx);
+        if (!ContextualCheckInputs(tx, state, view, true, STANDARD_SCRIPT_VERIFY_FLAGS, true, txdata, Params().GetConsensus(), consensusBranchId))
+        {
+            return error("AcceptToMemoryPool: ConnectInputs failed %s", hash.ToString());
+        }
+
+        // Check again against just the consensus-critical mandatory script
+        // verification flags, in case of bugs in the standard flags that cause
+        // transactions to pass as valid when they're actually invalid. For
+        // instance the STRICTENC flag was incorrectly allowing certain
+        // CHECKSIG NOT scripts to pass, even though they were invalid.
+        //
+        // There is a similar check in CreateNewBlock() to prevent creating
+        // invalid blocks, however allowing such transactions into the mempool
+        // can be exploited as a DoS attack.
+        if (!ContextualCheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true, txdata, Params().GetConsensus(), consensusBranchId))
+        {
+            return error("AcceptToMemoryPool: BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags %s", hash.ToString());
+        }
+
+        // Store transaction in memory
+        pool.addUnchecked(hash, entry, !IsInitialBlockDownload());
+
+   	    }
+        }
     }
-
-    // SyncWithWallets(tx, NULL);
-
     return true;
 }
 
@@ -2037,8 +2141,6 @@ bool IsInitialBlockDownload()
     return false;
 }
 
-static bool fLargeWorkForkFound = false;
-static bool fLargeWorkInvalidChainFound = false;
 static CBlockIndex *pindexBestForkTip = NULL;
 static CBlockIndex *pindexBestForkBase = NULL;
 
@@ -6106,7 +6208,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
     }
 
-
+    }
     else if (strCommand == "headers" && !fImporting && !fReindex) // Ignore headers received while importing
     {
         std::vector<CBlockHeader> headers;

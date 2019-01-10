@@ -59,10 +59,11 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  */
 static CBlock CreateGenesisBlock(uint32_t nTime, const uint256& nNonce, const std::vector<unsigned char>& nSolution, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
 {
-    const char* pszTimestamp = "Zcash0b9c4eef8b7cc417ee5001e3500984b6fea35683a7cac141a043c42064835d34";
+    const char* pszTimestamp = "Commercium5b983e3f258fb03419cbb777bf926eacc96a9f1affd5294d11cf0c351a6785fd";
     const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
     return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nSolution, nBits, nVersion, genesisReward);
 }
+
 
 /**
  * Main network
@@ -81,16 +82,18 @@ class CMainParams : public CChainParams {
 public:
     CMainParams() {
         strNetworkID = "main";
-        strCurrencyUnits = "ZEC";
-        bip44CoinType = 133; // As registered in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+        strCurrencyUnits = "CMM";
+        bip44CoinType = 767; // As registered in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
         consensus.fCoinbaseMustBeProtected = true;
-        consensus.nSubsidySlowStartInterval = 20000;
-        consensus.nSubsidyHalvingInterval = 840000;
+//        consensus.nSubsidySlowStartInterval = 20000;
+        consensus.nSubsidyHalvingInterval = 60 * 24 * 365;
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 4000;
         consensus.powLimit = uint256S("0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
         consensus.nPowAveragingWindow = 17;
+        consensus.nMasternodePaymentsStartBlock = 1200;
+        consensus.nMasternodePaymentsIncreasePeriod = 43200; // 1 month
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nPowMaxAdjustDown = 32; // 32% adjustment down
         consensus.nPowMaxAdjustUp = 16; // 16% adjustment up
@@ -103,22 +106,22 @@ public:
         consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170005;
-        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight = 347500;
+        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight = 100;
         consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170007;
-        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight = 419200;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight = 100;
 
         // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x000000000000000000000000000000000000000000000000006f31c0e1f30221");
+	 consensus.nMinimumChainWork = uint256S("0000000000000000000000000000000000000000000000000000000000000767");
 
         /**
          * The message start string should be awesome! ⓩ❤
          */
-        pchMessageStart[0] = 0x24;
-        pchMessageStart[1] = 0xe9;
-        pchMessageStart[2] = 0x27;
-        pchMessageStart[3] = 0x64;
-        vAlertPubKey = ParseHex("04b7ecf0baa90495ceb4e4090f6b2fd37eec1e9c85fac68a487f3ce11589692e4a317479316ee814e066638e1db54e37a10689b70286e6315b1087b6615d179264");
-        nDefaultPort = 8233;
+        pchMessageStart[0] = 0xba;
+        pchMessageStart[1] = 0xad;
+        pchMessageStart[2] = 0xa5;
+        pchMessageStart[3] = 0x55;
+        vAlertPubKey = ParseHex("04388fbebb11406e3760971a8f21d410009df52c3c14aa6856626fccd815da45e3d3e3cf323a2087692b1ead972cf6300731f1f8cd3617b8d739526f213dd9f138");
+        nDefaultPort = 2018;
         nPruneAfterHeight = 100000;
         const size_t N = 200, K = 9;
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
@@ -126,27 +129,30 @@ public:
         nEquihashK = K;
         nMasternodeCountDrift = 0;
 
+    nMasternodeCountDrift = 0;
+
         genesis = CreateGenesisBlock(
-            1477641360,
-            uint256S("0x0000000000000000000000000000000000000000000000000000000000001257"),
-            ParseHex("000a889f00854b8665cd555f4656f68179d31ccadc1b1f7fb0952726313b16941da348284d67add4686121d4e3d930160c1348d8191c25f12b267a6a9c131b5031cbf8af1f79c9d513076a216ec87ed045fa966e01214ed83ca02dc1797270a454720d3206ac7d931a0a680c5c5e099057592570ca9bdf6058343958b31901fce1a15a4f38fd347750912e14004c73dfe588b903b6c03166582eeaf30529b14072a7b3079e3a684601b9b3024054201f7440b0ee9eb1a7120ff43f713735494aa27b1f8bab60d7f398bca14f6abb2adbf29b04099121438a7974b078a11635b594e9170f1086140b4173822dd697894483e1c6b4e8b8dcd5cb12ca4903bc61e108871d4d915a9093c18ac9b02b6716ce1013ca2c1174e319c1a570215bc9ab5f7564765f7be20524dc3fdf8aa356fd94d445e05ab165ad8bb4a0db096c097618c81098f91443c719416d39837af6de85015dca0de89462b1d8386758b2cf8a99e00953b308032ae44c35e05eb71842922eb69797f68813b59caf266cb6c213569ae3280505421a7e3a0a37fdf8e2ea354fc5422816655394a9454bac542a9298f176e211020d63dee6852c40de02267e2fc9d5e1ff2ad9309506f02a1a71a0501b16d0d36f70cdfd8de78116c0c506ee0b8ddfdeb561acadf31746b5a9dd32c21930884397fb1682164cb565cc14e089d66635a32618f7eb05fe05082b8a3fae620571660a6b89886eac53dec109d7cbb6930ca698a168f301a950be152da1be2b9e07516995e20baceebecb5579d7cdbc16d09f3a50cb3c7dffe33f26686d4ff3f8946ee6475e98cf7b3cf9062b6966e838f865ff3de5fb064a37a21da7bb8dfd2501a29e184f207caaba364f36f2329a77515dcb710e29ffbf73e2bbd773fab1f9a6b005567affff605c132e4e4dd69f36bd201005458cfbd2c658701eb2a700251cefd886b1e674ae816d3f719bac64be649c172ba27a4fd55947d95d53ba4cbc73de97b8af5ed4840b659370c556e7376457f51e5ebb66018849923db82c1c9a819f173cccdb8f3324b239609a300018d0fb094adf5bd7cbb3834c69e6d0b3798065c525b20f040e965e1a161af78ff7561cd874f5f1b75aa0bc77f720589e1b810f831eac5073e6dd46d00a2793f70f7427f0f798f2f53a67e615e65d356e66fe40609a958a05edb4c175bcc383ea0530e67ddbe479a898943c6e3074c6fcc252d6014de3a3d292b03f0d88d312fe221be7be7e3c59d07fa0f2f4029e364f1f355c5d01fa53770d0cd76d82bf7e60f6903bc1beb772e6fde4a70be51d9c7e03c8d6d8dfb361a234ba47c470fe630820bbd920715621b9fbedb49fcee165ead0875e6c2b1af16f50b5d6140cc981122fcbcf7c5a4e3772b3661b628e08380abc545957e59f634705b1bbde2f0b4e055a5ec5676d859be77e20962b645e051a880fddb0180b4555789e1f9344a436a84dc5579e2553f1e5fb0a599c137be36cabbed0319831fea3fddf94ddc7971e4bcf02cdc93294a9aab3e3b13e3b058235b4f4ec06ba4ceaa49d675b4ba80716f3bc6976b1fbf9c8bf1f3e3a4dc1cd83ef9cf816667fb94f1e923ff63fef072e6a19321e4812f96cb0ffa864da50ad74deb76917a336f31dce03ed5f0303aad5e6a83634f9fcc371096f8288b8f02ddded5ff1bb9d49331e4a84dbe1543164438fde9ad71dab024779dcdde0b6602b5ae0a6265c14b94edd83b37403f4b78fcd2ed555b596402c28ee81d87a909c4e8722b30c71ecdd861b05f61f8b1231795c76adba2fdefa451b283a5d527955b9f3de1b9828e7b2e74123dd47062ddcc09b05e7fa13cb2212a6fdbc65d7e852cec463ec6fd929f5b8483cf3052113b13dac91b69f49d1b7d1aec01c4a68e41ce157"),
+            1546139923,
+            uint256S("0x0000000000000000000000000000000000000000000000000000000000000767"),
+            ParseHex("0023b23f1d0ca4068453e474d644343b1931be7209105c21f2900f3fc9ce03b411ce7d9406007d57d776043b56eddfd47c1fe51e80d343c79255890daf9c4f0da14892d7d44547504b219ed55083ba122778aa6906c02c83e861bb759c6d38af025fcaab8c16def1c80753c44a8a82d477e73fc304736ca1eaae5757f90c0cb3b8c818c571317f1912d8cc7a34f332229acdf151029fb3a1e92d07cff2294ccb732baf735a7bfd2603c90d58b696300ab37c543bc0a3753a65c65b9fb00e6a18e24e23c7c3cd02226c56f486e2c951d83f4210a5d333cc45424e79a8d86c6ee4d5d385851cebc24329de4204115f8d6d7cb45282579d16791179374003e82269e1de683ddb6be714f9dfe85ecad99c9c9807fdd64ad64453dce51e30a2455848c5463715107103f4d6ed10cf9143645020b375dbf27c54b9eef2fd3f16568ece5614a174a0d671f1cd4dd1ba3cf59e6f012bec66227710a1f1d5c253399c31f4ced1c730ac113672b085c64b518fa8e28cf3f0953ed8eb7e669814e24f4547c5fd370365a2998625c25cbe61ec5a074008a6c1a814fdff9b5035a27d636635a92e1d6dee1b723eb8eb09f23596a3e27370e91ecccccd98ce861c67e9e1b21434758282977bbe4e80f6292f1de5f21fa7d125d2db16bb141d635ac1ad5b2578082db1ac29ae1daa8d4ffdd9c52ba6fec156154fb33bfee33802725f0d48422868e8248488f7da7a57d0569fcd5d0b881b818f16b121ee17036019ad8eaa9bb158f6262d4a77b95ff50b7dd84e32d786d1d64a8eb157469b7b5605a8f9f5c627f43759e86f6c8466b31ffc027806881211e1a05009561348010042614e58aab3aa5736eb7f5dd19312cd1ae51892d9f31b7ee183d7dc3a06d261a115074b2848dc151be236c2019c79b2487b0988c38dd0c87731ce1452756255ac2de142bbf0490176297f2b6b4b5ba94b50487aeaa22c2fc410f8d404c840760d0ff723316f63d092be61ae9faf7972350826fac76f1dd0c8fe4811d72d306e607694c5609e0e9dc3f57a217491274df1764aba982d9523af8f36093e066e21c922a9b3cb12dbb02012756fcd183506490ba67dc5ac0bcbf8d9a609b5dc07e6985cf6718b213a02c6510c6da4ed7594eca3a816857083beaa4a3e221c05f061ca43fdeb74158bda6b62945c96a6db03ed4f012e49ee2485948372e267bfed14b4f7290d2600ee0104612bb9bc54d2ed405daa01c48b9dbc9f075494c7dc82bf9be6265b1f9c7fa15b0cbb1ea54027efffb030251a5f68d8b4598ef9d3ff2d553d09ad04db6e9f2c31e54fa165e1a0ba6a6f49fcf1f5e9d30845bbbae949742742af13ecfb5f678b0ea1f8aecc2306b68c49ec0bfb6cb24b40df77c6cf2e1c5f24ea3750d4cd03565ad5e0b315f66dbe2665aa1ed477e005716bf7a5eb8e05b4b2985932fb7ea25d2a3745f246110d597e9436878534299ca07d7cbe940938c2e117a0aceae9506fa9e53319cd0be925f36b147cd04320359baee2242f27c38ec3597d2fdf5e24251df76a0d805126c459a7a100c9ab0a35edd1435d341eef051d24baf8d7150186b90ed5555444ad424bf8156925118662b0be8d381bc97bf4b9d963fa0a256c5965bf291d77e12dcd4ca3ba31a806347acca6ecbe9934420663a4d7b6b73451c63cc50636bad48973a3d0970a4a0b339da62924cf82e929776775ecaf8d661f5f330ee3cf65f4d440e39af9549716767b5d50199217b21573b4f8d06969c7e49ac3e74f7566952693902fdb15cc5e89cb4e6f7688bba456ad2438ad6a384fa5341d1f372dad1d4163621e8612ade204d9faebf26e7e17e8424b525211b3721662a803a9d03dee45f049fd2417133e281c525d43b4f5a732c3ec5970d74c3597"),
             0x1f07ffff, 4, 0);
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256S("0x00040fe8ec8471911baa1db1266ea15dd06b4a8a5c453883c000b031973dce08"));
-        assert(genesis.hashMerkleRoot == uint256S("0xc4eaa58879081de3c24a7b117ed2b28300e7ec4c4c1dff1d3f1268b7857a4ddb"));
+        assert(consensus.hashGenesisBlock == uint256S("0x00069418c278f4defdf27e431e82e35d640a6a95d9413bea1f80543c8eccb9a4"));
+        assert(genesis.hashMerkleRoot == uint256S("0x2c27c06852f8cb8b5c68adeb46f87a7dbbc3db18094e2a44d5df690546e35fac"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.z.cash")); // Zcash
-        vSeeds.push_back(CDNSSeedData("str4d.xyz", "dnsseed.str4d.xyz")); // @str4d
-        vSeeds.push_back(CDNSSeedData("znodes.org", "dnsseed.znodes.org")); // @bitcartel
+        vSeeds.push_back(CDNSSeedData("seed04.commercium.net", "seed04.commercium.net")); //Commercium seed node
+        vSeeds.push_back(CDNSSeedData("seed03.commercium.net", "seed03.commercium.net")); //Commercium seed node
+        vSeeds.push_back(CDNSSeedData("seed02.commercium.net", "seed02.commercium.net")); //Commercium seed node
+        vSeeds.push_back(CDNSSeedData("seed01.commercium.net", "seed01.commercium.net")); //Commercium seed node
 
-        // guarantees the first 2 characters, when base58 encoded, are "t1"
-        base58Prefixes[PUBKEY_ADDRESS]     = {0x1C,0xB8};
-        // guarantees the first 2 characters, when base58 encoded, are "t3"
-        base58Prefixes[SCRIPT_ADDRESS]     = {0x1C,0xBD};
-        // the first character, when base58 encoded, is "5" or "K" or "L" (as in Bitcoin)
-        base58Prefixes[SECRET_KEY]         = {0x80};
+        // guarantees the first character, when base58 encoded, is "C"
+        base58Prefixes[PUBKEY_ADDRESS]     = {0x1C};
+        // the first character of MULTISIG, when base58 encoded, is "M"
+        base58Prefixes[SCRIPT_ADDRESS]     = {0x33};
+        // the first character, when base58 encoded, is "M"
+        base58Prefixes[SECRET_KEY]         = {0x8C};
         // do not rely on these BIP32 prefixes; they are not specified and may change
         base58Prefixes[EXT_PUBLIC_KEY]     = {0x04,0x88,0xB2,0x1E};
         base58Prefixes[EXT_SECRET_KEY]     = {0x04,0x88,0xAD,0xE4};
@@ -172,90 +178,27 @@ public:
 
         checkpointData = (CCheckpointData) {
             boost::assign::map_list_of
-            (0, consensus.hashGenesisBlock)
-            (2500, uint256S("0x00000006dc968f600be11a86cbfbf7feb61c7577f45caced2e82b6d261d19744"))
-            (15000, uint256S("0x00000000b6bc56656812a5b8dcad69d6ad4446dec23b5ec456c18641fb5381ba"))
-            (67500, uint256S("0x000000006b366d2c1649a6ebb4787ac2b39c422f451880bc922e3a6fbd723616"))
-            (100000, uint256S("0x000000001c5c82cd6baccfc0879e3830fd50d5ede17fa2c37a9a253c610eb285"))
-            (133337, uint256S("0x0000000002776ccfaf06cc19857accf3e20c01965282f916b8a886e3e4a05be9"))
-            (180000, uint256S("0x000000001205b742eac4a1b3959635bdf8aeada078d6a996df89740f7b54351d"))
-            (222222, uint256S("0x000000000cafb9e56445a6cabc8057b57ee6fcc709e7adbfa195e5c7fac61343"))
-            (270000, uint256S("0x00000000025c1cfa0258e33ab050aaa9338a3d4aaa3eb41defefc887779a9729"))
-            (304600, uint256S("0x00000000028324e022a45014c4a4dc51e95d41e6bceb6ad554c5b65d5cea3ea5"))
-            (410100, uint256S("0x0000000002c565958f783a24a4ac17cde898ff525e75ed9baf66861b0b9fcada")),
-            1539405939,     // * UNIX timestamp of last checkpoint block
-            3954156,        // * total number of transactions between genesis and last checkpoint
+          //  (0, consensus.hashGenesisBlock),
+	    (0, uint256S("0x00069418c278f4defdf27e431e82e35d640a6a95d9413bea1f80543c8eccb9a4")),
+            1546139923,     // * UNIX timestamp of last checkpoint block
+            0,              // * total number of transactions between genesis and last checkpoint
                             //   (the tx=... number in the SetBestChain debug.log lines)
-            5553            // * estimated number of transactions per day after checkpoint
+            0            // * estimated number of transactions per day after checkpoint
                             //   total number of tx / (checkpoint block height / (24 * 24))
         };
 
         // Founders reward script expects a vector of 2-of-3 multisig addresses
         vFoundersRewardAddress = {
-            "t3Vz22vK5z2LcKEdg16Yv4FFneEL1zg9ojd", /* main-index: 0*/
-            "t3cL9AucCajm3HXDhb5jBnJK2vapVoXsop3", /* main-index: 1*/
-            "t3fqvkzrrNaMcamkQMwAyHRjfDdM2xQvDTR", /* main-index: 2*/
-            "t3TgZ9ZT2CTSK44AnUPi6qeNaHa2eC7pUyF", /* main-index: 3*/
-            "t3SpkcPQPfuRYHsP5vz3Pv86PgKo5m9KVmx", /* main-index: 4*/
-            "t3Xt4oQMRPagwbpQqkgAViQgtST4VoSWR6S", /* main-index: 5*/
-            "t3ayBkZ4w6kKXynwoHZFUSSgXRKtogTXNgb", /* main-index: 6*/
-            "t3adJBQuaa21u7NxbR8YMzp3km3TbSZ4MGB", /* main-index: 7*/
-            "t3K4aLYagSSBySdrfAGGeUd5H9z5Qvz88t2", /* main-index: 8*/
-            "t3RYnsc5nhEvKiva3ZPhfRSk7eyh1CrA6Rk", /* main-index: 9*/
-            "t3Ut4KUq2ZSMTPNE67pBU5LqYCi2q36KpXQ", /* main-index: 10*/
-            "t3ZnCNAvgu6CSyHm1vWtrx3aiN98dSAGpnD", /* main-index: 11*/
-            "t3fB9cB3eSYim64BS9xfwAHQUKLgQQroBDG", /* main-index: 12*/
-            "t3cwZfKNNj2vXMAHBQeewm6pXhKFdhk18kD", /* main-index: 13*/
-            "t3YcoujXfspWy7rbNUsGKxFEWZqNstGpeG4", /* main-index: 14*/
-            "t3bLvCLigc6rbNrUTS5NwkgyVrZcZumTRa4", /* main-index: 15*/
-            "t3VvHWa7r3oy67YtU4LZKGCWa2J6eGHvShi", /* main-index: 16*/
-            "t3eF9X6X2dSo7MCvTjfZEzwWrVzquxRLNeY", /* main-index: 17*/
-            "t3esCNwwmcyc8i9qQfyTbYhTqmYXZ9AwK3X", /* main-index: 18*/
-            "t3M4jN7hYE2e27yLsuQPPjuVek81WV3VbBj", /* main-index: 19*/
-            "t3gGWxdC67CYNoBbPjNvrrWLAWxPqZLxrVY", /* main-index: 20*/
-            "t3LTWeoxeWPbmdkUD3NWBquk4WkazhFBmvU", /* main-index: 21*/
-            "t3P5KKX97gXYFSaSjJPiruQEX84yF5z3Tjq", /* main-index: 22*/
-            "t3f3T3nCWsEpzmD35VK62JgQfFig74dV8C9", /* main-index: 23*/
-            "t3Rqonuzz7afkF7156ZA4vi4iimRSEn41hj", /* main-index: 24*/
-            "t3fJZ5jYsyxDtvNrWBeoMbvJaQCj4JJgbgX", /* main-index: 25*/
-            "t3Pnbg7XjP7FGPBUuz75H65aczphHgkpoJW", /* main-index: 26*/
-            "t3WeKQDxCijL5X7rwFem1MTL9ZwVJkUFhpF", /* main-index: 27*/
-            "t3Y9FNi26J7UtAUC4moaETLbMo8KS1Be6ME", /* main-index: 28*/
-            "t3aNRLLsL2y8xcjPheZZwFy3Pcv7CsTwBec", /* main-index: 29*/
-            "t3gQDEavk5VzAAHK8TrQu2BWDLxEiF1unBm", /* main-index: 30*/
-            "t3Rbykhx1TUFrgXrmBYrAJe2STxRKFL7G9r", /* main-index: 31*/
-            "t3aaW4aTdP7a8d1VTE1Bod2yhbeggHgMajR", /* main-index: 32*/
-            "t3YEiAa6uEjXwFL2v5ztU1fn3yKgzMQqNyo", /* main-index: 33*/
-            "t3g1yUUwt2PbmDvMDevTCPWUcbDatL2iQGP", /* main-index: 34*/
-            "t3dPWnep6YqGPuY1CecgbeZrY9iUwH8Yd4z", /* main-index: 35*/
-            "t3QRZXHDPh2hwU46iQs2776kRuuWfwFp4dV", /* main-index: 36*/
-            "t3enhACRxi1ZD7e8ePomVGKn7wp7N9fFJ3r", /* main-index: 37*/
-            "t3PkLgT71TnF112nSwBToXsD77yNbx2gJJY", /* main-index: 38*/
-            "t3LQtHUDoe7ZhhvddRv4vnaoNAhCr2f4oFN", /* main-index: 39*/
-            "t3fNcdBUbycvbCtsD2n9q3LuxG7jVPvFB8L", /* main-index: 40*/
-            "t3dKojUU2EMjs28nHV84TvkVEUDu1M1FaEx", /* main-index: 41*/
-            "t3aKH6NiWN1ofGd8c19rZiqgYpkJ3n679ME", /* main-index: 42*/
-            "t3MEXDF9Wsi63KwpPuQdD6by32Mw2bNTbEa", /* main-index: 43*/
-            "t3WDhPfik343yNmPTqtkZAoQZeqA83K7Y3f", /* main-index: 44*/
-            "t3PSn5TbMMAEw7Eu36DYctFezRzpX1hzf3M", /* main-index: 45*/
-            "t3R3Y5vnBLrEn8L6wFjPjBLnxSUQsKnmFpv", /* main-index: 46*/
-            "t3Pcm737EsVkGTbhsu2NekKtJeG92mvYyoN", /* main-index: 47*/
-//            "t3PZ9PPcLzgL57XRSG5ND4WNBC9UTFb8DXv", /* main-index: 48*/
-//            "t3L1WgcyQ95vtpSgjHfgANHyVYvffJZ9iGb", /* main-index: 49*/
-//            "t3JtoXqsv3FuS7SznYCd5pZJGU9di15mdd7", /* main-index: 50*/
-//            "t3hLJHrHs3ytDgExxr1mD8DYSrk1TowGV25", /* main-index: 51*/
-//            "t3fmYHU2DnVaQgPhDs6TMFVmyC3qbWEWgXN", /* main-index: 52*/
-//            "t3T4WmAp6nrLkJ24iPpGeCe1fSWTPv47ASG", /* main-index: 53*/
-//            "t3fP6GrDM4QVwdjFhmCxGNbe7jXXXSDQ5dv", /* main-index: 54*/
-};
-
+            "MZMN4YjaYhnnDgMWLQVC93LuCPFJ51tBwT", /* main-index: 0*/
+            "MujoWRKHEy3ndn2V5JZrXhQSiy3huZPV8U", /* main-index: 1*/
+            "MqdZ2ji6rX2HsBXdt9WpES2RSaE7R6A5zF", /* main-index: 2*/
+        };
         nPoolMaxTransactions = 3;
-        strSporkKey = "045da9271f5d9df405d9e83c7c7e62e9c831cc85c51ffaa6b515c4f9c845dec4bf256460003f26ba9d394a17cb57e6759fe231eca75b801c20bccd19cbe4b7942d";
+        strSporkKey = "02cdca2ab8eb11b9fc8f99683684379cff2c09089d609d5ffce0c2032be75cd735";
 
-        strObfuscationPoolDummyAddress = "s1eQnJdoWDhKhxDrX8ev3aFjb1J6ZwXCxUT";
-        nStartMasternodePayments = 1523750400; //2018-04-15
+        strObfuscationPoolDummyAddress = "CVM2U1RDmX7sezRgiYwSDxcLsHkYXLzAPj";
+        nStartMasternodePayments = 1546862400; //2019-01-07
         nBudget_Fee_Confirmations = 6; // Number of confirmations for the finalization fee
-
         assert(vFoundersRewardAddress.size() <= consensus.GetLastFoundersRewardBlockHeight());
     }
 };
