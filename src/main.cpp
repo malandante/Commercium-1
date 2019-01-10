@@ -4049,7 +4049,7 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, CBlockIn
         }
     }
 
-    // Coinbase transaction must include an output sending 20% of
+    // Coinbase transaction must include an output sending 5% of
     // the block reward to a founders reward script, until the last founders
     // reward block is reached, with exception of the genesis block.
     // The last founders reward block is defined as the block just before the
@@ -4059,9 +4059,19 @@ bool ContextualCheckBlock(const CBlock& block, CValidationState& state, CBlockIn
 
         BOOST_FOREACH(const CTxOut& output, block.vtx[0].vout) {
             if (output.scriptPubKey == Params().GetFoundersRewardScriptAtHeight(nHeight)) {
-                if (output.nValue == (GetBlockSubsidy(nHeight, consensusParams) / 5)) {
-                    found = true;
-                    break;
+                if(nHeight < consensusParams.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight)
+                {
+                  if (output.nValue == (GetBlockSubsidy(nHeight, consensusParams) / 20)) {
+                      found = true;
+                      break;
+                  }
+                }
+                else
+                {
+                    if (output.nValue == (GetBlockSubsidy(nHeight, consensusParams) * 7.5 / 100)) {
+                        found = true;
+                        break;
+                    }
                 }
             }
         }

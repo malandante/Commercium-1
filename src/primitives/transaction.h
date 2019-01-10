@@ -22,8 +22,6 @@
 #include "zcash/Zcash.h"
 #include "zcash/JoinSplit.hpp"
 #include "zcash/Proof.hpp"
-
-// Overwinter transaction version
 static const int32_t OVERWINTER_TX_VERSION = 3;
 static_assert(OVERWINTER_TX_VERSION >= OVERWINTER_MIN_TX_VERSION,
     "Overwinter tx version must not be lower than minimum");
@@ -786,6 +784,7 @@ struct CMutableTransaction
      */
     uint256 GetHash() const;
 
+    std::string ToString() const;
 
     friend bool operator==(const CMutableTransaction& a, const CMutableTransaction& b)
     {
