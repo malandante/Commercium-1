@@ -23,6 +23,7 @@ public:
 
 static const CRPCConvertParam vRPCConvertParams[] =
 {
+    { "getalldata", 0},
     { "stop", 0 },
     { "setmocktime", 0 },
     { "getaddednodeinfo", 0 },
@@ -100,6 +101,15 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "spork", 1},
     { "setban", 2 },
     { "setban", 3 },
+	{ "getblockhashes", 0 },
+    { "getblockhashes", 1 },
+    { "getblockhashes", 2 },
+    { "getspentinfo", 0},
+    { "getaddresstxids", 0},
+    { "getaddressbalance", 0},
+    { "getaddressdeltas", 0},
+    { "getaddressutxos", 0},
+    { "getaddressmempool", 0},
     // disabled until removal of the legacy 'masternode' command
     //{"startmasternode", 1},
     { "mnvoteraw", 1},

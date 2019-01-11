@@ -946,7 +946,7 @@ bool CWallet::GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& 
     // Find possible candidates
     std::vector<COutput> vPossibleCoins;
 
-    AvailableCoins(vPossibleCoins, true, NULL, false, true, ONLY_10000);
+    AvailableCoins(vPossibleCoins, true, NULL, false, true, ONLY_100000);
     if (vPossibleCoins.empty()) {
         LogPrintf("CWallet::GetMasternodeVinAndKeys -- Could not locate any valid masternode vin\n");
         return false;
@@ -2150,7 +2150,7 @@ CAmount CWalletTx::GetUnlockedCredit() const
         const CTxOut& txout = vout[i];
 
         if (pwallet->IsSpent(hashTx, i) || pwallet->IsLockedCoin(hashTx, i)) continue;
-        if (fMasterNode && vout[i].nValue == 10000 * COIN) continue; // do not count MN-like outputs
+        if (fMasterNode && vout[i].nValue == 100000 * COIN) continue; // do not count MN-like outputs
 
         nCredit += pwallet->GetCredit(txout, ISMINE_SPENDABLE);
         if (!MoneyRange(nCredit))
@@ -2183,8 +2183,8 @@ CAmount CWalletTx::GetLockedCredit() const
             nCredit += pwallet->GetCredit(txout, ISMINE_SPENDABLE);
         }
 
-        // Add masternode collaterals which are handled likc locked coins
-        if (fMasterNode && vout[i].nValue == 10000 * COIN) {
+        // Add masternode collaterals which are handled like locked coins
+        if (fMasterNode && vout[i].nValue == 100000 * COIN) {
             nCredit += pwallet->GetCredit(txout, ISMINE_SPENDABLE);
         }
 
@@ -3026,7 +3026,7 @@ CAmount CWalletTx::GetAnonymizableCredit(bool fUseCache) const
         const CTxIn vin = CTxIn(hashTx, i);
 
         if (pwallet->IsSpent(hashTx, i) || pwallet->IsLockedCoin(hashTx, i)) continue;
-        if (fMasterNode && vout[i].nValue == 10000 * COIN) continue; // do not count MN-like outputs
+        if (fMasterNode && vout[i].nValue == 100000 * COIN) continue; // do not count MN-like outputs
 
         const int rounds = pwallet->GetInputObfuscationRounds(vin);
         if (rounds >= -2 && rounds < nSendRounds) {
@@ -3404,14 +3404,14 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                 bool found = false;
                 if (coin_type == ONLY_DENOMINATED) {
                     found = IsDenominatedAmount(pcoin->vout[i].nValue);
-                } else if (coin_type == ONLY_NOT10000IFMN) {
-                    found = !(fMasterNode && pcoin->vout[i].nValue == 10000 * COIN);
-                } else if (coin_type == ONLY_NONDENOMINATED_NOT10000IFMN) {
+                } else if (coin_type == ONLY_NOT100000IFMN) {
+                    found = !(fMasterNode && pcoin->vout[i].nValue == 100000 * COIN);
+                } else if (coin_type == ONLY_NONDENOMINATED_NOT100000IFMN) {
                     if (IsCollateralAmount(pcoin->vout[i].nValue)) continue; // do not use collateral amounts
                     found = !IsDenominatedAmount(pcoin->vout[i].nValue);
-                    if (found && fMasterNode) found = pcoin->vout[i].nValue != 10000 * COIN; // do not use Hot MN funds
-                } else if (coin_type == ONLY_10000) {
-                    found = pcoin->vout[i].nValue == 10000 * COIN;
+                    if (found && fMasterNode) found = pcoin->vout[i].nValue != 100000 * COIN; // do not use Hot MN funds
+                } else if (coin_type == ONLY_100000) {
+                    found = pcoin->vout[i].nValue == 100000 * COIN;
                 } else {
                     found = true;
                 }
@@ -3428,7 +3428,7 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                 {
                     continue;
                 }
-                if (IsLockedCoin((*it).first, i) && coin_type != ONLY_10000)
+                if (IsLockedCoin((*it).first, i) && coin_type != ONLY_100000)
                 {
                     continue;
                 }
@@ -3648,13 +3648,13 @@ bool CWallet::SelectCoins(const CAmount& nTargetValue, set<pair<const CWalletTx*
         return (nValueRet >= nTargetValue);
     }
 
-    //if we're doing only denominated, we need to round up to the nearest .1 SNG
+    //if we're doing only denominated, we need to round up to the nearest .1 CMM
     if (coin_type == ONLY_DENOMINATED) {
         // Make outputs by looping through denominations, from large to small
         BOOST_FOREACH (CAmount v, obfuScationDenominations) {
             BOOST_FOREACH (const COutput& out, vCoins) {
                 if (out.tx->vout[out.i].nValue == v                                               //make sure it's the denom we're looking for
-                    && nValueRet + out.tx->vout[out.i].nValue < nTargetValue + (0.1 * COIN) + 100 //round the amount up to .1 SNG over
+                    && nValueRet + out.tx->vout[out.i].nValue < nTargetValue + (0.1 * COIN) + 100 //round the amount up to .1 CMM over
                     ) {
                     CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
                     int rounds = GetInputObfuscationRounds(vin);
@@ -3757,12 +3757,12 @@ bool CWallet::SelectCoinsByDenominations(int nDenom, CAmount nValueMin, CAmount 
 
             // Function returns as follows:
             //
-            // bit 0 - 10000 SNG+1 ( bit on if present )
-            // bit 1 - 1000 SNG+1
-            // bit 2 - 100 SNG+1
-            // bit 3 - 10 SNG+1
-            // bit 4 - 1 SNG+1
-            // bit 5 - .1 SNG+1
+            // bit 0 - 10000 CMM+1 ( bit on if present )
+            // bit 1 - 1000 CMM+1
+            // bit 2 - 100 CMM+1
+            // bit 3 - 10 CMM+1
+            // bit 4 - 1 CMM+1
+            // bit 5 - .1 CMM+1
 
             CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
 
@@ -3837,7 +3837,7 @@ bool CWallet::SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<
 
     vector<COutput> vCoins;
 
-    AvailableCoins(vCoins, true, coinControl, nObfuscationRoundsMin < 0 ? ONLY_NONDENOMINATED_NOT10000IFMN : ONLY_DENOMINATED);
+    AvailableCoins(vCoins, true, coinControl, nObfuscationRoundsMin < 0 ? ONLY_NONDENOMINATED_NOT100000IFMN : ONLY_DENOMINATED);
 
     set<pair<const CWalletTx*, unsigned int> > setCoinsRet2;
 
@@ -3849,7 +3849,7 @@ bool CWallet::SelectCoinsDark(CAmount nValueMin, CAmount nValueMax, std::vector<
         if (out.tx->vout[out.i].nValue < CENT) continue;
         //do not allow collaterals to be selected
         if (IsCollateralAmount(out.tx->vout[out.i].nValue)) continue;
-        if (fMasterNode && out.tx->vout[out.i].nValue == 10000 * COIN) continue; //masternode input
+        if (fMasterNode && out.tx->vout[out.i].nValue == 100000 * COIN) continue; //masternode input
 
         if (nValueRet + out.tx->vout[out.i].nValue <= nValueMax) {
             CTxIn vin = CTxIn(out.tx->GetHash(), out.i);
@@ -4224,10 +4224,10 @@ bool CWallet::CreateTransaction(const vector<CRecipient>& vecSend, CWalletTx& wt
 
                     if (coin_type == ALL_COINS) {
                         strFailReason += " " + _("Insufficient funds.");
-                    } else if (coin_type == ONLY_NOT10000IFMN) {
-                        strFailReason += " " + _("Unable to locate enough funds for this transaction that are not equal 10000 SNG.");
-                    } else if (coin_type == ONLY_NONDENOMINATED_NOT10000IFMN) {
-                        strFailReason += " " + _("Unable to locate enough Obfuscation non-denominated funds for this transaction that are not equal 10000 SNG.");
+                    } else if (coin_type == ONLY_NOT100000IFMN) {
+                        strFailReason += " " + _("Unable to locate enough funds for this transaction that are not equal 10000 CMM.");
+                    } else if (coin_type == ONLY_NONDENOMINATED_NOT100000IFMN) {
+                        strFailReason += " " + _("Unable to locate enough Obfuscation non-denominated funds for this transaction that are not equal 10000 CMM.");
                     } else {
                         strFailReason += " " + _("Unable to locate enough Obfuscation denominated funds for this transaction.");
                         strFailReason += " " + _("Obfuscation uses exact denominated amounts to send funds, you might simply need to anonymize some more coins.");

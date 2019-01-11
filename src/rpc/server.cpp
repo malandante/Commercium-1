@@ -5,6 +5,7 @@
 
 #include "rpc/server.h"
 
+#include "base58.h"
 #include "init.h"
 #include "key_io.h"
 #include "random.h"
@@ -245,11 +246,11 @@ UniValue stop(const UniValue& params, bool fHelp)
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "stop\n"
-            "\nStop Zcash server.");
+            "\nStop Commercium server.");
     // Event loop will exit after current HTTP requests have been handled, so
     // this reply will get back to the client.
     StartShutdown();
-    return "Zcash server stopping";
+    return "Commercium server stopping";
 }
 
 /**
@@ -261,6 +262,38 @@ static const CRPCCommand vRPCCommands[] =
     /* Overall control/query calls */
     { "control",            "help",                   &help,                   true  },
     { "control",            "stop",                   &stop,                   true  },
+
+	
+    /* MN features */
+    {"commercium",             "masternode",               &masternode, true},
+    {"commercium",             "listmasternodes",          &listmasternodes, true},
+    {"commercium",             "getmasternodecount",       &getmasternodecount, true},
+    {"commercium",             "masternodeconnect",        &masternodeconnect, true},
+    {"commercium",             "masternodecurrent",        &masternodecurrent, true},
+    {"commercium",             "masternodedebug",          &masternodedebug, true},
+    {"commercium",             "startmasternode",          &startmasternode, true},
+    {"commercium",             "createmasternodekey",      &createmasternodekey, true},
+    {"commercium",             "getmasternodeoutputs",     &getmasternodeoutputs, true},
+    {"commercium",             "listmasternodeconf",       &listmasternodeconf, true},
+    {"commercium",             "getmasternodestatus",      &getmasternodestatus, true},
+    {"commercium",             "getmasternodewinners",     &getmasternodewinners, true},
+    {"commercium",             "getmasternodescores",      &getmasternodescores, true},
+    {"commercium",             "mnbudget",                 &mnbudget, true},
+    {"commercium",             "preparebudget",            &preparebudget, true},
+    {"commercium",             "submitbudget",             &submitbudget, true},
+    {"commercium",             "mnbudgetvote",             &mnbudgetvote, true},
+    {"commercium",             "getbudgetvotes",           &getbudgetvotes, true},
+    {"commercium",             "getnextsuperblock",        &getnextsuperblock, true},
+    {"commercium",             "getbudgetprojection",      &getbudgetprojection, true},
+    {"commercium",             "getbudgetinfo",            &getbudgetinfo, true},
+    {"commercium",             "mnbudgetrawvote",          &mnbudgetrawvote, true},
+    {"commercium",             "mnfinalbudget",            &mnfinalbudget, true},
+    {"commercium",             "checkbudgets",             &checkbudgets, true},
+    {"commercium",             "mnsync",                   &mnsync, true},
+    {"commercium",             "spork",                    &spork, true},
+    {"commercium",             "getpoolinfo",              &getpoolinfo, true},
+    {"commercium",             "startalias",               &startalias, true},
+
 };
 
 CRPCTable::CRPCTable()
@@ -458,13 +491,13 @@ UniValue CRPCTable::execute(const std::string &strMethod, const UniValue &params
 
 std::string HelpExampleCli(const std::string& methodname, const std::string& args)
 {
-    return "> zcash-cli " + methodname + " " + args + "\n";
+    return "> commercium-cli " + methodname + " " + args + "\n";
 }
 
 std::string HelpExampleRpc(const std::string& methodname, const std::string& args)
 {
     return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", "
-        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:8232/\n";
+        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:12019/\n";
 }
 
 string experimentalDisabledHelpMsg(const string& rpc, const string& enableArg)

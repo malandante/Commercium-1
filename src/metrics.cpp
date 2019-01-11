@@ -262,7 +262,7 @@ int printMiningStatus(bool mining)
         lines++;
     } else {
         std::cout << _("You are currently not mining.") << std::endl;
-        std::cout << _("To enable mining, add 'gen=1' to your zcash.conf and restart.") << std::endl;
+        std::cout << _("To enable mining, add 'gen=1' to your commercium.conf and restart.") << std::endl;
         lines += 2;
     }
     std::cout << std::endl;
@@ -332,7 +332,14 @@ int printMetrics(size_t cols, bool mining)
                     int height = mapBlockIndex[hash]->nHeight;
                     CAmount subsidy = GetBlockSubsidy(height, consensusParams);
                     if ((height > 0) && (height <= consensusParams.GetLastFoundersRewardBlockHeight())) {
-                        subsidy -= subsidy/5;
+                        if(height < consensusParams.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight)
+                        {
+                            subsidy -= subsidy / 20;
+                        }
+                        else
+                        {
+                            subsidy -= subsidy * 7.5 / 100;
+                        }
                     }
                     if (std::max(0, COINBASE_MATURITY - (tipHeight - height)) > 0) {
                         immature += subsidy;
@@ -461,11 +468,74 @@ void ThreadShowMetricsScreen()
         std::cout << std::endl;
 
         // Thank you text
-        std::cout << _("Thank you for running a Zcash node!") << std::endl;
+        std::cout << _("Thank you for running a Commercium node!") << std::endl;
         std::cout << _("You're helping to strengthen the network and contributing to a social good :)") << std::endl;
 
         // Privacy notice text
         std::cout << PrivacyInfo();
         std::cout << std::endl;
+    }
+
+    while (true) {
+        // Number of lines that are always displayed
+        int lines = 1;
+        int cols = 80;
+
+        // Get current window size
+        if (isTTY) {
+#ifdef WIN32
+            CONSOLE_SCREEN_BUFFER_INFO csbi;
+            if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi) != 0) {
+                cols = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+            }
+			cols = 80;
+#else
+
+            struct winsize w;
+            w.ws_col = 0;
+            if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) != -1 && w.ws_col != 0) {
+                cols = w.ws_col;
+            }
+#endif
+        }
+
+        if (isScreen) {
+            // Erase below current position
+            std::cout << "\e[J";
+        }
+
+        // Miner status
+#ifdef ENABLE_MINING
+        bool mining = GetBoolArg("-gen", false);
+#else
+        bool mining = false;
+#endif
+
+        if (loaded) {
+            lines += printStats(mining);
+            lines += printMiningStatus(mining);
+        }
+        lines += printMetrics(cols, mining);
+        lines += printMessageBox(cols);
+        lines += printInitMessage();
+
+        if (isScreen) {
+            // Explain how to exit
+            std::cout << "[" << _("Press Ctrl+C to exit") << "] [" << _("Set 'showmetrics=0' to hide") << "]" << std::endl;
+        } else {
+            // Print delineator
+            std::cout << "----------------------------------------" << std::endl;
+        }
+
+        *nNextRefresh = GetTime() + nRefresh;
+        while (GetTime() < *nNextRefresh) {
+            boost::this_thread::interruption_point();
+            MilliSleep(200);
+        }
+
+        if (isScreen) {
+            // Return to the top of the updating section
+            std::cout << "\e[" << lines << "A";
+        }
     }
 }

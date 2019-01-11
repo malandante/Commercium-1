@@ -27,7 +27,7 @@ Modify the alert parameters, id and message found in this file.
 
 Build and run with -sendalert or -printalert.
 
-./zcashd -printtoconsole -sendalert
+./commerciumd -printtoconsole -sendalert
 
 One minute after starting up, the alert will be broadcast. It is then
 flooded through the network until the nRelayUntil time, and will be
@@ -78,8 +78,8 @@ void ThreadSendAlert()
     // These versions are protocol versions
     // 170002 : 1.0.0
     // 170006 : 1.1.2
-    // 170007 : 2.0.0
-    alert.nMinVer       = 170002;
+    // 170004 : 2.0.0
+    alert.nMinVer       = 170004;
     alert.nMaxVer       = 170006;
 
     //

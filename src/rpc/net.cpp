@@ -96,7 +96,7 @@ UniValue getpeerinfo(const UniValue& params, bool fHelp)
             "    \"timeoffset\": ttt,         (numeric) The time offset in seconds\n"
             "    \"pingtime\": n,             (numeric) ping time\n"
             "    \"pingwait\": n,             (numeric) ping wait\n"
-            "    \"version\": v,              (numeric) The peer version, such as 170002\n"
+            "    \"version\": v,              (numeric) The peer version, such as 170006\n"
             "    \"subver\": \"/MagicBean:x.y.z[-v]/\",  (string) The string version\n"
             "    \"inbound\": true|false,     (boolean) Inbound (true) or Outbound (false)\n"
             "    \"startingheight\": n,       (numeric) The starting height (block) of the peer\n"
@@ -180,8 +180,8 @@ UniValue addnode(const UniValue& params, bool fHelp)
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "2. \"command\"  (string, required) 'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once\n"
             "\nExamples:\n"
-            + HelpExampleCli("addnode", "\"192.168.0.6:8233\" \"onetry\"")
-            + HelpExampleRpc("addnode", "\"192.168.0.6:8233\", \"onetry\"")
+            + HelpExampleCli("addnode", "\"192.168.0.6:2018\" \"onetry\"")
+            + HelpExampleRpc("addnode", "\"192.168.0.6:2018\", \"onetry\"")
         );
 
     string strNode = params[0].get_str();
@@ -224,8 +224,8 @@ UniValue disconnectnode(const UniValue& params, bool fHelp)
             "\nArguments:\n"
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "\nExamples:\n"
-            + HelpExampleCli("disconnectnode", "\"192.168.0.6:8233\"")
-            + HelpExampleRpc("disconnectnode", "\"192.168.0.6:8233\"")
+            + HelpExampleCli("disconnectnode", "\"192.168.0.6:2018\"")
+            + HelpExampleRpc("disconnectnode", "\"192.168.0.6:2018\"")
         );
 
     CNode* pNode = FindNode(params[0].get_str());
@@ -256,7 +256,7 @@ UniValue getaddednodeinfo(const UniValue& params, bool fHelp)
             "    \"connected\" : true|false,          (boolean) If connected\n"
             "    \"addresses\" : [\n"
             "       {\n"
-            "         \"address\" : \"192.168.0.201:8233\",  (string) The Zcash server host and port\n"
+            "         \"address\" : \"192.168.0.201:2018\",  (string) The Commercium server host and port\n"
             "         \"connected\" : \"outbound\"           (string) connection, inbound or outbound\n"
             "       }\n"
             "       ,...\n"

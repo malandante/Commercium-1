@@ -17,7 +17,7 @@
 #include <boost/foreach.hpp>
 
 static const int SPROUT_VALUE_VERSION = 1001400;
-static const int SAPLING_VALUE_VERSION = 1010100;
+static const int SAPLING_VALUE_VERSION = 2010100;
 
 struct CDiskBlockPos
 {
