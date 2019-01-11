@@ -2,10 +2,10 @@
 *.deb
 *.exe
 src/bitcoin
-src/zcashd
-src/zcash-cli
-src/zcash-gtest
-src/zcash-tx
+src/commerciumd
+src/commercium-cli
+src/commercium-gtest
+src/commercium-tx
 src/test/test_bitcoin
 
 *zcashTest.pk
@@ -89,6 +89,7 @@ build
 /*.info
 test_bitcoin.coverage/
 zcash-gtest.coverage/
+commercium-gtest.coverage
 total.coverage/
 coverage_percent.txt
 
