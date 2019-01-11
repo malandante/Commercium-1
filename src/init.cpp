@@ -1303,6 +1303,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         std::string errorString;
 
         if (!CWallet::Verify(strWalletFile, warningString, errorString))
+        {
             return false;
         }
         else

@@ -3239,7 +3239,7 @@ UniValue z_listaddresses(const UniValue& params, bool fHelp)
     return ret;
 }
 
-CAmount getBalanceTaddr(std::string transparentAddress, int minDepth=1, bool ignoreUnspendable=true) {
+CAmount getBalanceTaddr(std::string transparentAddress, int minDepth, bool ignoreUnspendable) {
     std::set<CTxDestination> destinations;
     vector<COutput> vecOutputs;
     CAmount balance = 0;
@@ -3282,7 +3282,7 @@ CAmount getBalanceTaddr(std::string transparentAddress, int minDepth=1, bool ign
     return balance;
 }
 
-CAmount getBalanceZaddr(std::string address, int minDepth = 1, bool ignoreUnspendable=true) {
+CAmount getBalanceZaddr(std::string address, int minDepth, bool ignoreUnspendable) {
     CAmount balance = 0;
     std::vector<CSproutNotePlaintextEntry> sproutEntries;
     std::vector<SaplingNoteEntry> saplingEntries;
@@ -3296,7 +3296,6 @@ CAmount getBalanceZaddr(std::string address, int minDepth = 1, bool ignoreUnspen
     }
     return balance;
 }
-
 
 UniValue z_listreceivedbyaddress(const UniValue& params, bool fHelp)
 {

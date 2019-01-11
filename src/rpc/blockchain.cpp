@@ -421,6 +421,11 @@ UniValue getrawmempool(const UniValue& params, bool fHelp)
     return mempoolToJSON(fVerbose);
 }
 
+UniValue getblockdeltas(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error("");
+
     std::string strHash = params[0].get_str();
     uint256 hash(uint256S(strHash));
 

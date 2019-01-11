@@ -303,8 +303,6 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
                 entry.push_back(Pair("height", -1));
                 entry.push_back(Pair("confirmations", 0));
             }
-            else
-                entry.push_back(Pair("confirmations", 0));
         }
     }
 }
