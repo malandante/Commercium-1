@@ -72,6 +72,7 @@ void TransactionBuilder::AddSaplingSpend(
 
     spends.emplace_back(expsk, note, anchor, witness);
     mtx.valueBalance += note.value();
+    return true;
 }
 
 void TransactionBuilder::AddSaplingOutput(
@@ -100,14 +101,16 @@ void TransactionBuilder::AddTransparentInput(COutPoint utxo, CScript scriptPubKe
     tIns.emplace_back(scriptPubKey, value);
 }
 
-void TransactionBuilder::AddTransparentOutput(CTxDestination& to, CAmount value){
+bool TransactionBuilder::AddTransparentOutput(CTxDestination& to, CAmount value)
+{
     if (!IsValidDestination(to)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid output address, not a valid taddr.");
+        return false;
     }
 
     CScript scriptPubKey = GetScriptForDestination(to);
     CTxOut out(value, scriptPubKey);
     mtx.vout.push_back(out);
+    return true;
 }
 
 void TransactionBuilder::SetFee(CAmount fee)
@@ -121,18 +124,19 @@ void TransactionBuilder::SendChangeTo(libzcash::SaplingPaymentAddress changeAddr
     tChangeAddr = boost::none;
 }
 
-void TransactionBuilder::SendChangeTo(CTxDestination& changeAddr)
+bool TransactionBuilder::SendChangeTo(CTxDestination& changeAddr)
 {
     if (!IsValidDestination(changeAddr)) {
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid change address, not a valid taddr.");
+        return false;
     }
 
     tChangeAddr = changeAddr;
     zChangeAddr = boost::none;
 
+    return true;
 }
 
-TransactionBuilderResult TransactionBuilder::Build()
+boost::optional<CTransaction> TransactionBuilder::Build()
 {
     //
     // Consistency checks
@@ -147,7 +151,7 @@ TransactionBuilderResult TransactionBuilder::Build()
         change -= tOut.nValue;
     }
     if (change < 0) {
-        return TransactionBuilderResult("Change cannot be negative");
+        return boost::none;
     }
 
     //
@@ -161,14 +165,14 @@ TransactionBuilderResult TransactionBuilder::Build()
             AddSaplingOutput(zChangeAddr->first, zChangeAddr->second, change);
         } else if (tChangeAddr) {
             // tChangeAddr has already been validated.
-            AddTransparentOutput(tChangeAddr.value(), change);
+            assert(AddTransparentOutput(tChangeAddr.value(), change));
         } else if (!spends.empty()) {
             auto fvk = spends[0].expsk.full_viewing_key();
             auto note = spends[0].note;
             libzcash::SaplingPaymentAddress changeAddr(note.d, note.pk_d);
             AddSaplingOutput(fvk.ovk, changeAddr, change);
         } else {
-            return TransactionBuilderResult("Could not determine change address");
+            return boost::none;
         }
     }
 
@@ -185,7 +189,7 @@ TransactionBuilderResult TransactionBuilder::Build()
             spend.expsk.full_viewing_key(), spend.witness.position());
         if (!(cm && nf)) {
             librustzcash_sapling_proving_ctx_free(ctx);
-            return TransactionBuilderResult("Missing spend commitment or nullifier");
+            return boost::none;
         }
 
         CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
@@ -207,8 +211,7 @@ TransactionBuilderResult TransactionBuilder::Build()
                 sdesc.rk.begin(),
                 sdesc.zkproof.data())) {
             librustzcash_sapling_proving_ctx_free(ctx);
-
-            return TransactionBuilderResult("Spend proof failed");
+            return boost::none;
         }
 
         sdesc.anchor = spend.anchor;
@@ -221,7 +224,7 @@ TransactionBuilderResult TransactionBuilder::Build()
         auto cm = output.note.cm();
         if (!cm) {
             librustzcash_sapling_proving_ctx_free(ctx);
-            return TransactionBuilderResult("Missing output commitment");
+            return boost::none;
         }
 
         libzcash::SaplingNotePlaintext notePlaintext(output.note, output.memo);
@@ -229,7 +232,7 @@ TransactionBuilderResult TransactionBuilder::Build()
         auto res = notePlaintext.encrypt(output.note.pk_d);
         if (!res) {
             librustzcash_sapling_proving_ctx_free(ctx);
-            return TransactionBuilderResult("Failed to encrypt note");
+            return boost::none;
         }
         auto enc = res.get();
         auto encryptor = enc.second;
@@ -245,7 +248,7 @@ TransactionBuilderResult TransactionBuilder::Build()
                 odesc.cv.begin(),
                 odesc.zkproof.begin())) {
             librustzcash_sapling_proving_ctx_free(ctx);
-            return TransactionBuilderResult("Output proof failed");
+            return boost::none;
         }
 
         odesc.cm = *cm;
@@ -274,7 +277,7 @@ TransactionBuilderResult TransactionBuilder::Build()
         dataToBeSigned = SignatureHash(scriptCode, mtx, NOT_AN_INPUT, SIGHASH_ALL, 0, consensusBranchId);
     } catch (std::logic_error ex) {
         librustzcash_sapling_proving_ctx_free(ctx);
-        return TransactionBuilderResult("Could not construct signature hash");
+        return boost::none;
     }
 
     // Create Sapling spendAuth and binding signatures
@@ -304,11 +307,11 @@ TransactionBuilderResult TransactionBuilder::Build()
             tIn.scriptPubKey, sigdata, consensusBranchId);
 
         if (!signSuccess) {
-            return TransactionBuilderResult("Failed to sign transaction");
+            return boost::none;
         } else {
             UpdateTransaction(mtx, nIn, sigdata);
         }
     }
 
-    return TransactionBuilderResult(CTransaction(mtx));
+    return CTransaction(mtx);
 }
