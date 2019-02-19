@@ -3672,7 +3672,6 @@ static bool ActivateBestChainStep(CValidationState &state, CBlockIndex *pindexMo
             _("Please help, human!");
         LogPrintf("*** %s\n", msg);
         uiInterface.ThreadSafeMessageBox(msg, "", CClientUIInterface::MSG_ERROR);
-        StartShutdown();
         return false;
     }
 
@@ -5004,7 +5003,6 @@ bool RewindBlockIndex(const CChainParams& params, bool& clearWitnessCaches)
                 _("Please help, human!");
             LogPrintf("*** %s\n", msg);
             uiInterface.ThreadSafeMessageBox(msg, "", CClientUIInterface::MSG_ERROR);
-            StartShutdown();
             return false;
         }
     }
