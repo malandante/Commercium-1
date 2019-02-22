@@ -110,6 +110,7 @@ public:
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }
     /** Enforce coinbase consensus rule in regtest mode */
     void SetRegTestCoinbaseMustBeProtected() { consensus.fCoinbaseMustBeProtected = true; }
+    int GetNewTimeRule() const { return newTimeRule; }
 protected:
     CChainParams() {}
 
