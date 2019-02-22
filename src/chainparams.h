@@ -145,6 +145,7 @@ protected:
     int64_t nBudget_Fee_Confirmations;
     CCheckpointData checkpointData;
     std::vector<std::string> vFoundersRewardAddress;
+    int newTimeRule;
 };
 
 /**
