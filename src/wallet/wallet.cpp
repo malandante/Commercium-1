@@ -2207,7 +2207,23 @@ CAmount CWalletTx::GetDenominatedCredit(bool unconfirmed, bool fUseCache) const
     int nDepth = GetDepthInMainChain(false);
     if (nDepth < 0) return 0;
 
-    bool isUnconfirmed = !IsFinalTx(*this) || (!IsTrusted() && nDepth == 0);
+        // CheckFinalTx() uses chainActive.Height()+1 to evaluate
+    // nLockTime because when IsFinalTx() is called within
+    // CBlock::AcceptBlock(), the height of the block *being*
+    // evaluated is what is used. Thus if we want to know if a
+    // transaction can be part of the *next* block, we need to call
+    // IsFinalTx() with one more than chainActive.Height().
+    const int nBlockHeight = chainActive.Height() + 1;
+
+    // Timestamps on the other hand don't get any special treatment,
+    // because we can't know what timestamp the next block will have,
+    // and there aren't timestamp applications where it matters.
+    // However this changes once median past time-locks are enforced:
+    const int64_t nBlockTime = (STANDARD_LOCKTIME_VERIFY_FLAGS & LOCKTIME_MEDIAN_TIME_PAST)
+                             ? chainActive.Tip()->GetMedianTimePast()
+                             : GetAdjustedTime();
+
+    bool isUnconfirmed = !IsFinalTx(*this, nBlockHeight, nBlockTime) || (!IsTrusted() && nDepth == 0);
     if (unconfirmed != isUnconfirmed) return 0;
 
     if (fUseCache) {

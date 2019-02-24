@@ -1,4 +1,5 @@
 // Copyright (c) 2016 The Zcash developers
+// Copyright (c) 2018-2019 Commercium Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,6 +19,7 @@
 #include <string>
 #ifdef WIN32
 #include <io.h>
+ #include <windows.h>
 #else
 #include <sys/ioctl.h>
 #endif
@@ -331,7 +333,7 @@ int printMetrics(size_t cols, bool mining)
                         chainActive.Contains(mapBlockIndex[hash])) {
                     int height = mapBlockIndex[hash]->nHeight;
                     CAmount subsidy = GetBlockSubsidy(height, consensusParams);
-                    if ((height > 0) && (height <= consensusParams.GetLastFoundersRewardBlockHeight())) {
+                    if ((height > 0) && (height < consensusParams.GetLastFoundersRewardBlockHeight())) {
                         if(height < consensusParams.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight)
                         {
                             subsidy -= subsidy / 20;

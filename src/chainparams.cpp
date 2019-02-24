@@ -49,7 +49,7 @@ static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesi
  * database (and is in any case of zero value).
  *
  * >>> from pyblake2 import blake2s
- * >>> 'Zcash' + blake2s(b'The Economist 2016-10-29 Known unknown: Another crypto-currency is born. BTC#436254 0000000000000000044f321997f336d2908cf8c8d6893e88dbf067e2d949487d ETH#2521903 483039a6b6bd8bd05f0584f9a078d075e454925eb71c1f13eaff59b405a721bb DJIA close on 27 Oct 2016: 18,169.68').hexdigest()
+ * >>> 'Commercium' + blake2s(b'2018-01-01 Commercium is born.').hexdigest()
  *
  * CBlock(hash=00040fe8, ver=4, hashPrevBlock=00000000000000, hashMerkleRoot=c4eaa5, nTime=1477641360, nBits=1f07ffff, nNonce=4695, vtx=1)
  *   CTransaction(hash=c4eaa5, ver=1, vin.size=1, vout.size=1, nLockTime=0)
@@ -85,7 +85,7 @@ public:
         strCurrencyUnits = "CMM";
         bip44CoinType = 767; // As registered in https://github.com/satoshilabs/slips/blob/master/slip-0044.md
         consensus.fCoinbaseMustBeProtected = true;
-//        consensus.nSubsidySlowStartInterval = 20000;
+        consensus.nSubsidySlowStartInterval = 8000;
         consensus.nSubsidyHalvingInterval = 60 * 24 * 365;
         consensus.nMajorityEnforceBlockUpgrade = 750;
         consensus.nMajorityRejectBlockOutdated = 950;
@@ -122,6 +122,7 @@ public:
         pchMessageStart[3] = 0x55;
         vAlertPubKey = ParseHex("04388fbebb11406e3760971a8f21d410009df52c3c14aa6856626fccd815da45e3d3e3cf323a2087692b1ead972cf6300731f1f8cd3617b8d739526f213dd9f138");
         nDefaultPort = 2019;
+        nMaxTipAge = 24 * 60 * 60;
         nPruneAfterHeight = 100000;
         newTimeRule = 246600;
         const size_t N = 200, K = 9;
@@ -174,6 +175,7 @@ public:
         fRequireStandard = true;
         fMineBlocksOnDemand = false;
         fTestnetToBeDeprecatedFieldRPC = false;
+	fHeadersFirstSyncingActive = false;
 
         checkpointData = (CCheckpointData) {
             boost::assign::map_list_of
@@ -210,11 +212,11 @@ class CTestNetParams : public CChainParams {
 public:
     CTestNetParams() {
         strNetworkID = "test";
-        strCurrencyUnits = "TAZ";
+        strCurrencyUnits = "CMMT";
         bip44CoinType = 1;
         consensus.fCoinbaseMustBeProtected = true;
-        consensus.nSubsidySlowStartInterval = 20000;
-        consensus.nSubsidyHalvingInterval = 840000;
+        consensus.nSubsidySlowStartInterval = 8000;
+        consensus.nSubsidyHalvingInterval = 60 * 24 * 365 * 4;
         consensus.nMajorityEnforceBlockUpgrade = 51;
         consensus.nMajorityRejectBlockOutdated = 75;
         consensus.nMajorityWindow = 400;
@@ -223,28 +225,31 @@ public:
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nPowMaxAdjustDown = 32; // 32% adjustment down
         consensus.nPowMaxAdjustUp = 16; // 16% adjustment up
-        consensus.nPowTargetSpacing = 2.5 * 60;
-        consensus.nPowAllowMinDifficultyBlocksAfterHeight = 299187;
-        consensus.vUpgrades[Consensus::BASE_SPROUT].nProtocolVersion = 170002;
+        consensus.nPowTargetSpacing = 1 * 60;
+        consensus.nPowAllowMinDifficultyBlocksAfterHeight = 13000;
+        consensus.vUpgrades[Consensus::BASE_SPROUT].nProtocolVersion = 170006;
         consensus.vUpgrades[Consensus::BASE_SPROUT].nActivationHeight =
             Consensus::NetworkUpgrade::ALWAYS_ACTIVE;
-        consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nProtocolVersion = 170002;
+        consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nProtocolVersion = 170006;
         consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
-        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170003;
-        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight = 207500;
-        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170007;
-        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight = 280000;
+        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170007;
+        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight = 11000;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170008;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight = 11200;
+        consensus.nMasternodePaymentsStartBlock = 1500;
+        consensus.nMasternodePaymentsIncreasePeriod = 200;
 
-        // The best chain should have at least this much work.
-        consensus.nMinimumChainWork = uint256S("0x00000000000000000000000000000000000000000000000000000001d0c4d9cd");
+		// The best chain should have at least this much work.
+        consensus.nMinimumChainWork = uint256S("0x0");
 
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0x1a;
         pchMessageStart[2] = 0xf9;
         pchMessageStart[3] = 0xbf;
         vAlertPubKey = ParseHex("044e7a1553392325c871c5ace5d6ad73501c66f4c185d6b0453cf45dec5a1322e705c672ac1a27ef7cdaf588c10effdf50ed5f95f85f2f54a5f6159fca394ed0c6");
-        nDefaultPort = 18233;
+        nDefaultPort = 22019;
+        nMaxTipAge = 24 * 60 * 60;
         nPruneAfterHeight = 1000;
         const size_t N = 200, K = 9;
         BOOST_STATIC_ASSERT(equihash_parameters_acceptable(N, K));
@@ -264,7 +269,8 @@ public:
 
         vFixedSeeds.clear();
         vSeeds.clear();
-        vSeeds.push_back(CDNSSeedData("z.cash", "dnsseed.testnet.z.cash")); // Zcash
+        vSeeds.push_back(CDNSSeedData("test02.commercium.net", "test02.commercium.net")); // Commercium
+        vSeeds.push_back(CDNSSeedData("test01.commercium.net", "test01.commercium.net")); // Commercium
 
         // guarantees the first 2 characters, when base58 encoded, are "tm"
         base58Prefixes[PUBKEY_ADDRESS]     = {0x1D,0x25};
@@ -323,7 +329,7 @@ public:
             };
         assert(vFoundersRewardAddress.size() <= consensus.GetLastFoundersRewardBlockHeight());
 
-		nStartMasternodePayments = 1521072000; //2018-03-15
+		nStartMasternodePayments = 1546144639; //2018-29-12
     }
 };
 static CTestNetParams testNetParams;
@@ -348,7 +354,7 @@ public:
         assert(maxUint/UintToArith256(consensus.powLimit) >= consensus.nPowAveragingWindow);
         consensus.nPowMaxAdjustDown = 0; // Turn off adjustment down
         consensus.nPowMaxAdjustUp = 0; // Turn off adjustment up
-        consensus.nPowTargetSpacing = 2.5 * 60;
+        consensus.nPowTargetSpacing = 1 * 60;
         consensus.nPowAllowMinDifficultyBlocksAfterHeight = 0;
         consensus.vUpgrades[Consensus::BASE_SPROUT].nProtocolVersion = 170002;
         consensus.vUpgrades[Consensus::BASE_SPROUT].nActivationHeight =
@@ -356,10 +362,10 @@ public:
         consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nProtocolVersion = 170002;
         consensus.vUpgrades[Consensus::UPGRADE_TESTDUMMY].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
-        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170003;
+        consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nProtocolVersion = 170006;
         consensus.vUpgrades[Consensus::UPGRADE_OVERWINTER].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
-        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170006;
+        consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nProtocolVersion = 170007;
         consensus.vUpgrades[Consensus::UPGRADE_SAPLING].nActivationHeight =
             Consensus::NetworkUpgrade::NO_ACTIVATION_HEIGHT;
 
@@ -399,7 +405,7 @@ public:
 
         checkpointData = (CCheckpointData){
             boost::assign::map_list_of
-            ( 0, uint256S("0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206")),
+            ( 0, consensus.hashGenesisBlock),
             0,
             0,
             0

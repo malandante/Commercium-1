@@ -728,7 +728,7 @@ bool CheckTxInputs(const CTransaction& tx, CValidationState& state, const CCoins
  * Check if transaction is final and can be included in a block with the
  * specified height and time. Consensus critical.
  */
-bool IsFinalTx(const CTransaction& tx, int nBlockHeight = 0, int64_t nBlockTime = 0);
+bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime);
 
 /**
  * Check if transaction is expired and can be included in a block with the
