@@ -1,5 +1,5 @@
-# CommerciumContinuum
-Commercium gradual transition platform
+# Commercium
+Commercium platform
 
 ## Technical Specifications
 - Algorithm: Equihash
