@@ -326,6 +326,8 @@ extern UniValue spork(const UniValue& params, bool fHelp);
 extern UniValue getspentinfo(const UniValue& params, bool fHelp);
 
 extern void EnsureWalletIsUnlocked();
+
+extern UniValue getblockhashes(const UniValue& params, bool fHelp);
 extern UniValue getblockdeltas(const UniValue& params, bool fHelp);
 
 extern UniValue getblocksubsidy(const UniValue& params, bool fHelp);
