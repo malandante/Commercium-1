@@ -12,7 +12,7 @@ REM This script downloads's files...
 >> j_download.vbs ECHO URL = "https://github.com/CommerciumBlockchain/CommerciumContinuum/releases/download/data/ZcashParams.zip"
 >> j_download.vbs ECHO objWinHttp.open "GET", URL, False
 >> j_download.vbs ECHO objWinHttp.send ""
->> j_download.vbs ECHO SaveBinaryData "%APPDATA%\ZcashParams.zip",objWinHttp.responseBody
+>> j_download.vbs ECHO SaveBinaryData "%APPDATA%\ZcashParams\ZcashParams.zip",objWinHttp.responseBody
 >> j_download.vbs ECHO Function SaveBinaryData(FileName, Data)
 >> j_download.vbs ECHO. 
 >> j_download.vbs ECHO ' adTypeText for binary = 1
@@ -49,7 +49,7 @@ REM This script upzip's files...
 >> j_unzip.vbs ECHO End if
 >> j_unzip.vbs ECHO.
 >> j_unzip.vbs ECHO If var1 = "" then
->> j_unzip.vbs ECHO. strFileZIP = "ZcashParams.zip"
+>> j_unzip.vbs ECHO. strFileZIP = "%APPDATA%\ZcashParams\ZcashParams.zip"
 >> j_unzip.vbs ECHO Else
 >> j_unzip.vbs ECHO. strFileZIP = var1
 >> j_unzip.vbs ECHO End if
@@ -79,6 +79,7 @@ REM This script upzip's files...
 
 
 cscript //B j_download.vbs
+cd &APPDATA&\ZcashParams\
 cscript //B j_unzip.vbs ZcashParams.zip
 
 goto :EOF
