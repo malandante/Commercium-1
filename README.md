@@ -1,6 +1,10 @@
 # Commercium
 Commercium platform
 
+## Binaries can be downloaded at:
+
+https://continuousintegration.commercium.net/Release/
+
 ## Technical Specifications
 - Algorithm: Equihash
 - Max Supply: 58 million CMM
