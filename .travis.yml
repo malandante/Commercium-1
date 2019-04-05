@@ -50,8 +50,8 @@ before_script:
     - update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
     - update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
     - mkdir -p depends/SDKs depends/sdk-sources
-    - if [ -n "$OSX_SDK" -a ! -f depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.xz ]; then curl --location --fail $SDK_URL/MacOSX${OSX_SDK}.sdk.tar.xz -o depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.xz ]; fi
-    - if [ -n "$OSX_SDK" -a -f depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.xz ]; then xz -d MacOSX${OSX_SDK}.sdk.tar.xz ]; fi
+    - if [ -n "$OSX_SDK" -a ! -f depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.xz ]; then curl --location --fail $SDK_URL/MacOSX${OSX_SDK}.sdk.tar.xz -o depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.xz; fi
+    - if [ -n "$OSX_SDK" -a -f depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.xz ]; then xz -d MacOSX${OSX_SDK}.sdk.tar.xz; fi
     - if [ -n "$OSX_SDK" -a -f depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar ]; then gzip MacOSX${OSX_SDK}.sdk.tar; fi
     - if [ -n "$OSX_SDK" -a -f depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.gz ]; then tar -C depends/SDKs -xf depends/sdk-sources/MacOSX${OSX_SDK}.sdk.tar.gz; fi
     - make $MAKEJOBS -C depends HOST=$HOST $DEP_OPTS
