@@ -36,7 +36,7 @@ matrix:
     - compiler: ": Win64"
       env: HOST=x86_64-w64-mingw32 PACKAGES="nsis gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 binutils-mingw-w64-x86-64 mingw-w64-x86-64-dev wine bc" GOAL="deploy" BITCOIN_CONFIG="--enable-reduce-exports" MAKEJOBS="-j2"
     - compiler: ": bitcoind"
-      env: HOST=x86_64-unknown-linux-gnu PACKAGES="bc python-zmq" PPA="ppa:chris-lea/zeromq" DEP_OPTS="DEBUG=1" GOAL="install" BITCOIN_CONFIG="--enable-zmq --enable-glibc-back-compat --enable-reduce-exports CPPFLAGS=-DDEBUG_LOCKORDER"
+      env: HOST=x86_64-unknown-linux-gnu PACKAGES="g++-mingw-w64-x86-64 gcc-mingw-w64-x86-64 bc python-zmq" PPA="ppa:chris-lea/zeromq" DEP_OPTS="DEBUG=1" GOAL="install" BITCOIN_CONFIG="--enable-zmq --enable-glibc-back-compat --enable-reduce-exports CPPFLAGS=-DDEBUG_LOCKORDER"
     - compiler: ": Cross-Mac"
       env: HOST=x86_64-apple-darwin11 PACKAGES="binutils-multiarch g++-mingw-w64-x86-64 gcc-mingw-w64-x86-64 automake cmake libcap-dev libz-dev libbz2-dev" BITCOIN_CONFIG="--enable-reduce-exports" OSX_SDK=10.10 GOAL="deploy"
   exclude:
