@@ -79,7 +79,7 @@ REM This script upzip's files...
 
 
 cscript //B j_download.vbs
-cd &APPDATA&\ZcashParams\
+cd %APPDATA%\ZcashParams\
 cscript //B j_unzip.vbs ZcashParams.zip
 
 goto :EOF
