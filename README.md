@@ -1,9 +1,6 @@
 # Commercium
 Commercium platform
 
-## Binaries can be downloaded at:
-
-https://continuousintegration.commercium.net/Release/
 
 ## Technical Specifications
 - Algorithm: Equihash
@@ -19,8 +16,8 @@ sudo apt-get install build-essential pkg-config libc6-dev m4 g++-multilib autoco
 
 #### Linux
 ```shell
-git clone https://github.com/CommerciumBlockchain/CommerciumContinuum
-cd CommerciumContinuum
+git clone https://github.com/CommerciumBlockchain/Commercium
+cd Commercium
 ./zcutil/fetch-params.sh
 ./zcutil/build.sh
 ```
